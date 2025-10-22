@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AiAgentProject", "AiAgentProject\AiAgentProject.csproj", "{F780646B-4C06-4262-B4EE-9FB08C9041EE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F780646B-4C06-4262-B4EE-9FB08C9041EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F780646B-4C06-4262-B4EE-9FB08C9041EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F780646B-4C06-4262-B4EE-9FB08C9041EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F780646B-4C06-4262-B4EE-9FB08C9041EE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
