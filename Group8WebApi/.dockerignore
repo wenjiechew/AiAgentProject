@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.log
+node_modules/
+docker-compose*.yml
+.DS_Store
