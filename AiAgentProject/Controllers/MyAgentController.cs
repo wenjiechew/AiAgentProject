@@ -1,37 +1,34 @@
-using Microsoft.AspNetCore.Mvc;
+using AiAgentProject.Domains;
 using Azure;
 using Azure.AI.OpenAI;
-using Azure.AI.OpenAI.Chat;
 using Microsoft.AspNetCore.Mvc;
-using Azure;
-using Azure.AI.OpenAI;
-using Azure.AI.OpenAI.Chat;
+using Microsoft.Extensions.Options;
 using OpenAI.Chat;
-using Microsoft.VisualBasic;
 
 //namespace AiAgentProject.Controllers;
+
+namespace AiAgentProject.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 public class MyAgentController : ControllerBase
 {
-    private readonly IConfiguration _configuration;
+    private readonly ILogger<MyAgentController> _logger;
+    private readonly AzureOpenAiOptions _options;
     private readonly AzureOpenAIClient _azureClient;
 
-    private readonly ILogger<MyAgentController> _logger;
+    
     private Uri endpointUri;
     private string apiKey;
     private string deploymentName;
 
-    public MyAgentController(ILogger<MyAgentController> logger, IConfiguration configuration)
+    public MyAgentController(ILogger<MyAgentController> logger, IOptions<AzureOpenAiOptions> options)
     {
         _logger = logger;
-        _configuration = configuration; 
-        endpointUri = new Uri("https://nway-ai-test-001.cognitiveservices.azure.com/");
-        apiKey = "2T3G1HdnZ6NfRdkvYpSPNyVrBrX5WRF...JQQJ99BJACYeBjFXJ3w3AAAAACOG3kkF";
-  
-        deploymentName = "gpt-4.1";
-        _azureClient = new AzureOpenAIClient(endpointUri, new AzureKeyCredential(apiKey));
+        _options = options.Value;
+        
+        deploymentName = _options.Deployment;
+        _azureClient = new AzureOpenAIClient(new Uri(_options.Endpoint), new AzureKeyCredential(_options.ApiKey));
     }
 
 
@@ -41,32 +38,7 @@ public class MyAgentController : ControllerBase
         return Ok("MyAgent controller is working!");
     }
 
-    [HttpGet("GetResponse")]
-    public async Task<IActionResult> GetResponse()
-    {
-        ChatClient chatClient = _azureClient.GetChatClient(deploymentName);
-
-        var requestOptions = new ChatCompletionOptions()
-        {
-            // MaxCompletionTokens = 13107,
-            Temperature = 1.0f,
-            TopP = 1.0f,
-            FrequencyPenalty = 0.0f,
-            PresencePenalty = 0.0f,
-        };
-
-        List<ChatMessage> messages = new List<ChatMessage>()
-        {
-            new SystemChatMessage("You are a helpful assistant."),
-            new UserChatMessage("I am going to Paris, what should I see?"),
-        };
-
-        var response = chatClient.CompleteChat(messages, requestOptions);
-        System.Console.WriteLine(response.Value.Content[0].Text);
-        return Ok(new { response = response.Value.Content[0].Text });
-    }
-
-     // ✅ POST endpoint: api/myagentpost/postmessage
+    // ✅ POST endpoint: api/myagentpost/postmessage
     [HttpPost("PostMessage")]
     public async Task<IActionResult> PostMessage([FromBody] PromptRequest request)
     {
@@ -81,14 +53,16 @@ public class MyAgentController : ControllerBase
 
             var chatMessages = new List<ChatMessage>
             {
-                new SystemChatMessage("You are a helpful AI assistant."),
+                new SystemChatMessage(_options.DefaultSystemPrompt),
                 new UserChatMessage(request.Prompt)
             };
 
             var options = new ChatCompletionOptions
             {
-                Temperature = 0.7f,
-                TopP = 1.0f
+                Temperature = _options.Temperature,
+                TopP = _options.TopP,
+                FrequencyPenalty = _options.FrequencyPenalty,
+                PresencePenalty = _options.PresencePenalty
             };
 
             // ✅ Call Azure OpenAI chat completion
@@ -106,7 +80,7 @@ public class MyAgentController : ControllerBase
         }
     }
     
-     // ✅ Simple request model
+    // ✅ Simple request model
     public class PromptRequest
     {
         public string? Prompt { get; set; }

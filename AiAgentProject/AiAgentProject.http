@@ -1,6 +1,22 @@
-@AiAgentProject_HostAddress = http://localhost:5281
+@AiAgentProject_HostAddress = http://localhost:8080
+@AiAgentProject_AzureAddress = https://app-251030183203.azurewebsites.net
+@AgentController = api/MyAgent
 
-GET {{AiAgentProject_HostAddress}}/weatherforecast/
+#GET {{AiAgentProject_HostAddress}}/{{AgentController}}/
+GET {{AiAgentProject_AzureAddress}}/{{AgentController}}/
 Accept: application/json
 
 ###
+#GET {{AiAgentProject_HostAddress}}/{{AgentController}}/GetResponse
+GET {{AiAgentProject_AzureAddress}}/{{AgentController}}/GetResponse
+Accept: application/json
+
+###
+
+POST {{AiAgentProject_HostAddress}}/{{AgentController}}/PostMessage
+Content-Type: application/json
+Accept: application/json
+
+{
+  "prompt" : "what do you love about being an AI and say hello in 2 different language"
+}

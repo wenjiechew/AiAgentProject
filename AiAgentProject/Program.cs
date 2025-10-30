@@ -1,3 +1,5 @@
+using AiAgentProject.Domains;
+
 namespace AiAgentProject;
 
 public class Program
@@ -5,6 +7,9 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        
+        // Options
+        builder.Services.Configure<AzureOpenAiOptions>(builder.Configuration.GetSection("AzureOpenAi"));
 
         // Add services to the container.
 
