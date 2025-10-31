@@ -1,7 +1,11 @@
 @AiAgentProject_HostAddress = http://localhost:8080
-@AiAgentProject_AzureAddress = https://app-251030183203.azurewebsites.net
+@AiAgentProject_AzureAddress = https://user8aiagentproject.azurewebsites.net
 @AgentController = api/MyAgent
 
+POST {{AiAgentProject_HostAddress}}/{{AgentController}}/
+
+
+###
 #GET {{AiAgentProject_HostAddress}}/{{AgentController}}/
 GET {{AiAgentProject_AzureAddress}}/{{AgentController}}/
 Accept: application/json
@@ -20,3 +24,6 @@ Accept: application/json
 {
   "prompt" : "what do you love about being an AI and say hello in 2 different language"
 }
+
+
+
