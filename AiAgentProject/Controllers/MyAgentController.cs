@@ -23,12 +23,13 @@ public class MyAgentController : ControllerBase
     private string apiKey;
     private string deploymentName;
 
+    private static readonly Dictionary<string, List<ChatMessage>> _chatMemory = new()
     public MyAgentController(ILogger<MyAgentController> logger, IConfiguration configuration)
     {
         _logger = logger;
         _configuration = configuration; 
         endpointUri = new Uri("https://nway-ai-test-001.cognitiveservices.azure.com/");
-        apiKey = "2T3G1HdnZ6NfRdkvYpSPNyVrBrX5WRF...JQQJ99BJACYeBjFXJ3w3AAAAACOG3kkF";
+        apiKey = "2T3G1HdnZ6NfRdkvYpSPNyVrBrX5WRFuPyFB78zt0sAn7GR7ZYp2JQQJ99BJACYeBjFXJ3w3AAAAACOG3kkF";
   
         deploymentName = "gpt-4.1";
         _azureClient = new AzureOpenAIClient(endpointUri, new AzureKeyCredential(apiKey));
@@ -106,10 +107,65 @@ public class MyAgentController : ControllerBase
         }
     }
     
-     // ✅ Simple request model
-    public class PromptRequest
+       public class PromptRequest
     {
         public string? Prompt { get; set; }
+        public string? SessionId { get; set; } // optional for multi-user chat
     }
 
+    // ✅ POST api/myagentpost/PostMessage
+    [HttpPost("PostMessageWithMemory")]
+    public async Task<IActionResult> PostMessageWithMemory([FromBody] PromptRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Prompt))
+            return BadRequest(new { error = "Request must include a 'prompt' field." });
+
+        // Use user/session ID to isolate memory (you could use user email or token)
+        var userId = request.SessionId ?? "default-session";
+
+        if (!_chatMemory.ContainsKey(userId))
+        {
+            _chatMemory[userId] = new List<ChatMessage>
+            {
+                new SystemChatMessage("You are a friendly AI assistant that remembers past conversation context.")
+            };
+        }
+
+        // Add user message to memory
+        _chatMemory[userId].Add(new UserChatMessage(request.Prompt));
+
+        try
+        {
+            ChatClient chatClient = _azureClient.GetChatClient(_deploymentName);
+
+            var options = new ChatCompletionOptions
+            {
+                Model = _deploymentName, // ensures correct deployment
+                Temperature = 0.7f,
+                TopP = 1.0f
+            };
+
+            // 🔥 Send entire chat history (memory!)
+            var response = await chatClient.CompleteChatAsync(_chatMemory[userId], options);
+            var reply = response.Value.Content[0].Text;
+
+            // Save assistant’s reply in memory too
+            _chatMemory[userId].Add(new AssistantChatMessage(reply));
+
+            _logger.LogInformation("[{User}] {Prompt} -> {Reply}", userId, request.Prompt, reply);
+
+            return Ok(new
+            {
+                user = userId,
+                prompt = request.Prompt,
+                response = reply,
+                memoryCount = _chatMemory[userId].Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing chat for user {User}", request.SessionId);
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
