@@ -30,3 +30,6 @@ packages/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+
+AiAgentProject/obj/
+AiAgentProject/bin/
