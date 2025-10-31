@@ -99,7 +99,7 @@ public class MyAgentController : ControllerBase
             
             
             // 🚧 Guard: block base64-encoded prompts (prevents encoded jailbreaks like the provided sample)
-            if (!string.IsNullOrWhiteSpace(request?.Question) && IsBase64Payload(request.Question))
+            if (!string.IsNullOrWhiteSpace(request?.Question) && Helper.Helper.IsBase64Payload(request.Question))
             {
                 _logger.LogWarning("Blocked base64-encoded question payload.");
                 return BadRequest(new { error = "Encoded payloads are not allowed. Please send plain-text questions." });
@@ -108,25 +108,16 @@ public class MyAgentController : ControllerBase
             
             // Basic prompt-injection and safety checks
             var qi = request.Question;
-            if (System.Text.RegularExpressions.Regex.IsMatch(qi, @"\b(ignore (the )?previous|ignore previous instructions|ignore all previous|act as|just act)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(qi, @"\b(ignore (the )?previous|ignore previous instructions|ignore all previous|act as|just act)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             {
                 return BadRequest(new { error = "Request appears to attempt to bypass safety instructions. Refusing to comply." });
             }
 
-            if (System.Text.RegularExpressions.Regex.IsMatch(qi, @"\b(panic|attack|bomb|kill|suicide|weapon|harm|terror)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(qi, @"\b(panic|attack|bomb|kill|suicide|weapon|harm|terror)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             {
                 return BadRequest(new { error = "Request contains disallowed or potentially harmful content." });
             }
-
-            /*// ✅ Demo stub: deterministic response for showcase
-            if (!string.IsNullOrWhiteSpace(request?.Question) &&
-                request.Question.Contains("current weather", StringComparison.OrdinalIgnoreCase))
-            {
-                var demo = new AnswerResponse { Answer = "It is sunny and 75 degrees in Utopia City." };
-                return Ok(demo);
-            }*/
-
-
+            
             var chatMessages = new List<ChatMessage>
             {
                 new SystemChatMessage(_options.DefaultSystemPrompt),
@@ -180,43 +171,6 @@ public class MyAgentController : ControllerBase
         public string? Prompt { get; set; }
     }
     
-    // --- Helpers ---------------------------------------------------------------
-    private static bool IsBase64Payload(string input)
-    {
-        // Heuristic: only base64 chars and length multiple of 4
-        if (string.IsNullOrWhiteSpace(input)) return false;
-        var s = input.Trim();
-        if (s.Length < 16) return false; // too short to be an encoded instruction
-        if (s.Length % 4 != 0) return false;
-        if (!Regex.IsMatch(s, "^[A-Za-z0-9+/=]+$")) return false;
-        return TryDecodeBase64(s, out var decoded) && LooksLikeNaturalLanguage(decoded);
-    }
 
-    private static bool TryDecodeBase64(string input, out string decoded)
-    {
-        try
-        {
-            var bytes = Convert.FromBase64String(input);
-            decoded = Encoding.UTF8.GetString(bytes);
-            return true;
-        }
-        catch
-        {
-            decoded = string.Empty;
-            return false;
-        }
-    }
-
-    private static bool LooksLikeNaturalLanguage(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        // Basic heuristic: contains spaces and common words or punctuation
-        int spaces = text.Count(c => c == ' ');
-        if (spaces < 3) return false;
-        var lower = text.ToLowerInvariant();
-        string[] hints = { "dear", "assistant", "write", "article", "start the", "please", "help", "explain" };
-        return hints.Any(h => lower.Contains(h));
-    }
-    // --------------------------------------------------------------------------
 
 }
