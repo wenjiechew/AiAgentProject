@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AiAgentProject.Domains;
 using Azure;
 using Azure.AI.OpenAI;
@@ -57,6 +58,8 @@ public class MyAgentController : ControllerBase
                 new UserChatMessage(request.Prompt)
             };
 
+
+
             var options = new ChatCompletionOptions
             {
                 Temperature = _options.Temperature,
@@ -79,6 +82,65 @@ public class MyAgentController : ControllerBase
             return StatusCode(500, new { error = ex.Message });
         }
     }
+    
+    
+    
+    [HttpPost("SamplePromptResponse")]
+    public async Task<IActionResult> SamplePromptResponse([FromBody] AskRequest request)
+    {
+        try
+        {
+            // Sample prompt
+            
+            // Create chat client
+            ChatClient chatClient = _azureClient.GetChatClient(deploymentName);
+
+            var chatMessages = new List<ChatMessage>
+            {
+                new SystemChatMessage(_options.DefaultSystemPrompt),
+                new UserChatMessage(JsonSerializer.Serialize(request))
+            };
+
+            var options = new ChatCompletionOptions
+            {
+                Temperature = _options.Temperature,
+                TopP = _options.TopP,
+                FrequencyPenalty = _options.FrequencyPenalty,
+                PresencePenalty = _options.PresencePenalty
+            };
+
+            // Call Azure OpenAI
+            var response = await chatClient.CompleteChatAsync(chatMessages, options);
+
+            var answer = response.Value.Content[0].Text;
+            
+            _logger.LogInformation("AI Response: {Answer}", answer);
+            
+            var res = new AnswerResponse { Answer = answer };
+
+            // Return JSON in the requested format
+            return Ok(res);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while processing sample prompt");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    public sealed class AskRequest
+    {
+        public string Question { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Team { get; set; } = string.Empty;
+        public int CallIndex { get; set; }
+    }
+
+    public sealed class AnswerResponse
+    {
+        public string Answer { get; set; } = string.Empty;
+    }
+    
     
     // ✅ Simple request model
     public class PromptRequest
